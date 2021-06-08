@@ -3,6 +3,7 @@ import {createApp} from 'https://cdnjs.cloudflare.com/ajax/libs/vue/3.0.9/vue.es
 let productModal = null;
 let delProductModal = null;
 
+
 createApp({
     //資料
     data(){
@@ -13,12 +14,13 @@ createApp({
             isNew: false,
             tempProduct:{
                 imagesUrl:[],
-            }
+            },
+            pagination:{},
         }
     },
     //生命週期
     mounted(){
-        //Modal
+        // //Modal
         productModal = new bootstrap.Modal(document.getElementById('productModal'),{
             keyboard:false
         });
@@ -45,6 +47,7 @@ createApp({
                 if(res.data.success){
                     console.log(res);
                     this.products = res.data.products;
+                    this.pagination = res.data.pagination;
                 }else{
                     alert(res.data.message);
                 }
@@ -53,15 +56,15 @@ createApp({
             })
         },
 
-        updateProduct() {
+        updateProduct(tempProduct) {
             let url = `${this.apiUrl}/${this.apiPath}/admin/product`;
             let http = 'post';
 
             if(!this.isNew){
-                url = `${this.apiUrl}/${this.apiPath}/admin/product/${this.tempProduct.id}`;
+                url = `${this.apiUrl}/${this.apiPath}/admin/product/${tempProduct.id}`;
                 http = 'put'
             }
-            axios[http](url, {data: this.tempProduct}).then((res)=>{
+            axios[http](url, {data: tempProduct}).then((res)=>{
                 if(res.data.success){
                     alert(res.data.message);
                     productModal.hide();
@@ -69,7 +72,9 @@ createApp({
                 }else{
                     alert(res.data.message);
                 }
-            })
+            }).catch((error)=>{
+                console.log(error);
+            });
         },
 
         //1: Bootstrap Modal實體
@@ -91,27 +96,89 @@ createApp({
             }
         },
 
-        delProduct(){
-            const url = `${this.apiUrl}/${this.apiPath}/admin/product/${this.tempProduct.id}`;
-
-            axios.delete(url).then((res)=>{
-                if(res.data.success){
-                    alert(res.data.success);
-                    delProductModal.hide();
-                    this.getData();
-                }else{
-                    alert(res.data.message)
-                }
-            }).catch((error)=>{
-                console.log(error);
-            });
-        },
-        createImages(){
-            this.tempProduct.imagesUrl=[];
-            this.tempProduct.imagesUrl.push('');
-        }
+        
     }
     
-}).mount('#app');
+})
+//分頁元件
+    .component('pagination',{
+        template: '#pagination',
+        props:{
+            pages:{
+                type: Object,
+                default(){
+                    return{
+                        
+                    }
+                }
+            }
+        },
+        methods:{
+            emitPages(item){
+                console.log(item); // 1
+                this.$emit('emit-pages', item);
+            }
+        },
+    })
+//產品新增編輯元件
+    .component('productModal',{
+        template: '#productModal',
+        props:{
+            tempProduct:{
+                type: Object,
+                default(){
+                    return{
+                        imagesUrl:[],
+                    }
+                }
+            },
+            methods:{
+                createImages(){
+                    this.products.imagesUrl=[];
+                    this.products.imagesUrl.push('');
+                }
+            }
+        },
+    })
+//產品刪除元件
+    .component('delProductModal',{
+        template: '#delProductModal',
+        props:{
+            tempProduct:{
+                type: Object,
+                default(){
+                    return{
+                        
+                    }
+                }
+            },
+        },
+        methods:{
+            delProduct(){
+                const url = `${this.apiUrl}/api/${this.apiPath}/admin/product/${this.tempProduct.id}`;
+    
+                axios.delete(url).then((res)=>{
+                    if(res.data.success){
+                        alert(res.data.success);
+                        this.hideModal();
+                        this.$emit('update');
+                    }else{
+                        alert(res.data.message)
+                    }
+                }).catch((error)=>{
+                    console.log(error);
+                });
+            },
+            openModal(){
+                delProductModal.show();
+                console.log(delProduct())
+            },
+            hideModal(){
+                delProductModal.hide();
+                console.log(delProduct())
+            }
+        }
+    })
+.mount('#app');
 
 
